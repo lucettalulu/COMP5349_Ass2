@@ -3,4 +3,4 @@ spark-submit \
     --deploy-mode cluster \
     --num-executors 4 \
     Ass2.py \
-    --output $Ass2_output
+    --output $1
