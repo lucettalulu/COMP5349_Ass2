@@ -3,6 +3,7 @@ from pyspark import SparkConf, SparkContext
 from pyspark.sql.functions import concat
 from pyspark.sql.functions import coalesce, lit
 from pyspark.sql.functions import col, expr, when
+import argparse
 
 def flat_paragraph(record):
     context = record['paragraphs'][0]['context']
@@ -31,6 +32,12 @@ def flat_paragraph(record):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", help="the output path",
+                            default='week8_out')
+    args = parser.parse_args()
+    output_path = args.output
+
     spark_conf = SparkConf()\
         .setAppName("Assignment 2")
     sc=SparkContext.getOrCreate(spark_conf) 
@@ -65,4 +72,4 @@ if __name__ == "__main__":
     positive_samples = sample_df.filter('answer_start!=0')
     all_samples = positive_samples.union(negative_samples)
     all_samples.show(5)
-    all_samples.select('source','question','answer_start','answer_end').write.json('res')
+    all_samples.select('source','question','answer_start','answer_end').write.json(output_path)
