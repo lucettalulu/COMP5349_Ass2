@@ -6,25 +6,25 @@ from pyspark.sql.functions import col, expr, when
 import argparse
 
 def flat_paragraph(record):
-    context = record['paragraphs'][0]['context']
-    qas = record['paragraphs'][0]['qas']
-    sources=[]
-    context_len=len(context)
-    index = 0
-    res=[]
-    while(index < context_len):
+  context = record['paragraphs'][0]['context']
+  qas = record['paragraphs'][0]['qas']
+  sources=[]
+  context_len=len(context)
+  index = 0
+  res=[]
+  while(index < context_len):
     end = min(index+512,context_len)
     sources.append(context[index:end])
     for question in qas:
-        flag=True
-        if question['is_impossible']==False:
+      flag=True
+      if question['is_impossible']==False:
         for answer in question['answers']:
-            if answer['answer_start']>=index and answer['answer_start']<end:
+          if answer['answer_start']>=index and answer['answer_start']<end:
             flag=False
             res.append((record['title'],context[index:end],question['question'],answer['answer_start'],min(end,answer['answer_start']+len(answer['text']))))
         if flag:
-            res.append((record['title'],context[index:end],question['question'],0,0))
-        else:
+          res.append((record['title'],context[index:end],question['question'],0,0))
+      else:
         res.append((record['title'],context[index:end],question['question'],0,0))
     index+=256
 
