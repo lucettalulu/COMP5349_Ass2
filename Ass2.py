@@ -4,6 +4,7 @@ from pyspark.sql.functions import concat
 from pyspark.sql.functions import coalesce, lit
 from pyspark.sql.functions import col, expr, when
 import argparse
+from pyspark.sql.functions import explode
 
 def flat_paragraph(record):
   context = record['paragraphs'][0]['context']
@@ -46,7 +47,10 @@ spark = SparkSession \
     .appName("Assignment 2: Spark Data Analytics") \
     .getOrCreate()
 df = spark.read.format("json").load(text_file)
-df1 = df.select("data").first()
+df_data = df.select((explode("data").alias('data')))
+paragraph_df = df_data.select(explode("data.paragraphs").alias("paragraph"),'data.title')
+qas_df=paragraph_df.select(explode("paragraph.qas").alias("qas"),"paragraph.context","title")
+contract_rdd = qas_df.rdd
 contract_rdd = sc.parallelize(df.select("data").first()['data'])
 sample_rdd = contract_rdd.flatMap(flat_paragraph)
 samples_df = spark.createDataFrame(sample_rdd,['title', 'source','question','answer_start','answer_end'])
