@@ -48,8 +48,8 @@ spark = SparkSession \
     .getOrCreate()
 df = spark.read.format("json").load(text_file)
 df_data = df.select((explode("data").alias('data')))
-# df_data = df_data.select(explode("data.paragraphs").alias("paragraph"),'data.title')
-# df_data = df_data.select(explode("paragraph.qas").alias("qas"),"paragraph.context","title")
+df_data = df_data.select((explode("data.paragraphs").alias("paragraph")),'data.title')
+df_data = df_data.select((explode("paragraph.qas").alias("qas")),"paragraph.context","title")
 # contract_rdd = df_data.rdd
 contract_rdd = sc.parallelize(df.select("data").first()['data'])
 sample_rdd = contract_rdd.flatMap(flat_paragraph)
