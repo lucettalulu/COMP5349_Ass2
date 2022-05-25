@@ -4,10 +4,11 @@ from pyspark.sql.functions import concat
 from pyspark.sql.functions import coalesce, lit
 from pyspark.sql.functions import col, expr, when
 import argparse
+from pyspark.sql.functions import explode
 
 def flat_paragraph(record):
-  context = record['paragraphs'][0]['context']
-  qas = record['paragraphs'][0]['qas']
+  context = record['data']['paragraphs'][0]['context']
+  qas = record['data']['paragraphs'][0]['qas']
   sources=[]
   context_len=len(context)
   index = 0
@@ -21,11 +22,11 @@ def flat_paragraph(record):
         for answer in question['answers']:
           if answer['answer_start']>=index and answer['answer_start']<end:
             flag=False
-            res.append((record['title'],context[index:end],question['question'],answer['answer_start'],min(end,answer['answer_start']+len(answer['text']))))
+            res.append((record['data']['title'],context[index:end],question['question'],answer['answer_start'],min(end,answer['answer_start']+len(answer['text']))))
         if flag:
-          res.append((record['title'],context[index:end],question['question'],0,0))
+          res.append((record['data']['title'],context[index:end],question['question'],0,0))
       else:
-        res.append((record['title'],context[index:end],question['question'],0,0))
+        res.append((record['data']['title'],context[index:end],question['question'],0,0))
     index+=256
 
   return res
@@ -45,9 +46,9 @@ spark = SparkSession \
     .builder \
     .appName("Assignment 2: Spark Data Analytics") \
     .getOrCreate()
-df = spark.read.format("json").load(text_file)
-df1 = df.select("data").first()
-contract_rdd = sc.parallelize(df.select("data").first()['data'])
+df = spark.read.json(text_file)
+df1 = df.select((explode("data").alias('data')))
+contract_rdd = df1.rdd
 sample_rdd = contract_rdd.flatMap(flat_paragraph)
 samples_df = spark.createDataFrame(sample_rdd,['title', 'source','question','answer_start','answer_end'])
 sample_df = samples_df.withColumn('title_question',concat(samples_df['title'],samples_df['question']))
