@@ -47,7 +47,7 @@ spark = SparkSession \
     .appName("Assignment 2: Spark Data Analytics") \
     .getOrCreate()
 df = spark.read.format("json").load(text_file)
-# df_data = df.select((explode("data").alias('data')))
+df_data = df.select((explode("data").alias('data')))
 # df_data = df_data.select(explode("data.paragraphs").alias("paragraph"),'data.title')
 # df_data = df_data.select(explode("paragraph.qas").alias("qas"),"paragraph.context","title")
 # contract_rdd = df_data.rdd
