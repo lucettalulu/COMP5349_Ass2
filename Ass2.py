@@ -7,8 +7,8 @@ import argparse
 from pyspark.sql.functions import explode
 
 def flat_paragraph(record):
-  context = record['data']['paragraphs'][0]['context']
-  qas = record['data']['paragraphs'][0]['qas']
+  context = record['context']
+  qas = record['qas']
   sources=[]
   context_len=len(context)
   index = 0
@@ -16,17 +16,16 @@ def flat_paragraph(record):
   while(index < context_len):
     end = min(index+512,context_len)
     sources.append(context[index:end])
-    for question in qas:
-      flag=True
-      if question['is_impossible']==False:
-        for answer in question['answers']:
-          if answer['answer_start']>=index and answer['answer_start']<end:
-            flag=False
-            res.append((record['data']['title'],context[index:end],question['question'],answer['answer_start'],min(end,answer['answer_start']+len(answer['text']))))
-        if flag:
-          res.append((record['data']['title'],context[index:end],question['question'],0,0))
-      else:
-        res.append((record['data']['title'],context[index:end],question['question'],0,0))
+    flag=True
+    if qas['is_impossible']==False:
+      for answer in qas['answers']:
+        if answer['answer_start']>=index and answer['answer_start']<end:
+          flag=False
+          res.append((record['title'],context[index:end],qas['question'],answer['answer_start'],min(end,answer['answer_start']+len(answer['text']))))
+      if flag:
+        res.append((record['title'],context[index:end],qas['question'],0,0))
+    else:
+      res.append((record['title'],context[index:end],qas['question'],0,0))
     index+=256
 
   return res
@@ -47,12 +46,14 @@ spark = SparkSession \
     .appName("Assignment 2: Spark Data Analytics") \
     .getOrCreate()
 df = spark.read.json(text_file)
-df1 = df.select((explode("data").alias('data')))
-contract_rdd = df1.rdd
+df_data = df.select((explode("data").alias('data')))
+df_data = df_data.select(explode("data.paragraphs").alias("paragraph"),'data.title')
+df_data = df_data.select(explode("paragraph.qas").alias("qas"),"paragraph.context","title")
+contract_rdd = df_data.rdd
 sample_rdd = contract_rdd.flatMap(flat_paragraph)
 samples_df = spark.createDataFrame(sample_rdd,['title', 'source','question','answer_start','answer_end'])
 sample_df = samples_df.withColumn('title_question',concat(samples_df['title'],samples_df['question']))
-sample_df.show(5)
+# sample_df.show(5)
 title_question_count=sample_df.filter('answer_start!=0').groupby('title_question','title','question').count().withColumnRenamed('count','positive_count')
 question_avg=title_question_count.groupby('question').agg({'positive_count':'avg'}).withColumnRenamed('avg(positive_count)','question_avg')
 title_question_0_count=sample_df.filter('answer_start=0').groupby('title_question','title','question').count().withColumnRenamed('count','negative_count')
@@ -62,7 +63,7 @@ new_column_2 = when(
     col("positive_count").isNull(),col('question_avg')/col('negative_count')
     ).otherwise(col('positive_count')/col('negative_count'))
 big_df = big_df.withColumn('ratio', new_column_2)
-big_df.show(5)
+# big_df.show(5)
 new_column_3 = when(
     col("ratio").isNull(),0
     ).when(col('ratio')>1,1).otherwise(col('ratio'))
