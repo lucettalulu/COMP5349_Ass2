@@ -46,10 +46,10 @@ spark = SparkSession \
     .builder \
     .appName("Assignment 2: Spark Data Analytics") \
     .getOrCreate()
-df = spark.read.format("json").load(text_file)
-df_data = df.select((explode("data").alias('data')))
-df_data = df_data.select((explode("data.paragraphs").alias("paragraph")))
-df_data = df_data.select((explode("paragraph.qas").alias("qas")))
+df = spark.read.format("json").load(text_file).cache()
+df_data = df.select((explode("data").alias('data'))).cache()
+df_data = df_data.select((explode("data.paragraphs").alias("paragraph"))).cache()
+df_data = df_data.select((explode("paragraph.qas").alias("qas"))).cache()
 contract_rdd = df_data.rdd
 contract_rdd = sc.parallelize(df.select("data").first()['data'])
 sample_rdd = contract_rdd.flatMap(flat_paragraph)
