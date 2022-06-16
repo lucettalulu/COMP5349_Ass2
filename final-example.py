@@ -18,12 +18,12 @@ tweets_df = spark.read.option('multiline','true').json(tweets_data)
 
 tdf = tweets_df.select('id','replyto_id','retweet_id')
 
-retweets = tdf \ 
+retweets = tdf \
           .select('id','retweet_id')\
           .filter(tdf.retweet_id.isNotNull())\
           .withColumnRename('retweet_id','tweet_id')
 
-replies = tdf \ 
+replies = tdf \
           .select('id','replyto_id')\
           .filter(tdf.replyto_id.isNotNull())\
           .withColumnRename('replyto_id','tweet_id')
