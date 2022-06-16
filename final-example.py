@@ -15,7 +15,11 @@ spark = SparkSession \
     .getOrCreate()
 tweets_data = 'tweets.json'
 tweets_df = spark.read.option('multiline','true').json(tweets_data)
-
+parser = argparse.ArgumentParser()
+parser.add_argument("--output", help="the output path",
+                        default='week8_out')
+args = parser.parse_args()
+output_path = args.output
 tdf = tweets_df.select('id','replyto_id','retweet_id')
 
 retweets = tdf \
@@ -33,4 +37,4 @@ t3_df = t2_df.groupBy('tweet_id')\
               .count()\
               .withColumnRename('count','cnumber')
 
-r1 = t3_df.sort(t3_df.cnumber.desc()).take(5)
+r1 = t3_df.sort(t3_df.cnumber.desc()).write.json(output_path)
