@@ -25,16 +25,16 @@ tdf = tweets_df.select('id','replyto_id','retweet_id')
 retweets = tdf \
           .select('id','retweet_id')\
           .filter(tdf.retweet_id.isNotNull())\
-          .withColumnRename('retweet_id','tweet_id')
+          .withColumnRenamed('retweet_id','tweet_id')
 
 replies = tdf \
           .select('id','replyto_id')\
           .filter(tdf.replyto_id.isNotNull())\
-          .withColumnRename('replyto_id','tweet_id')
+          .withColumnRenamed('replyto_id','tweet_id')
 
 t2_df = replies.union(retweets)
 t3_df = t2_df.groupBy('tweet_id')\
               .count()\
-              .withColumnRename('count','cnumber')
+              .withColumnRenamed('count','cnumber')
 
 r1 = t3_df.sort(t3_df.cnumber.desc()).write.json(output_path)
